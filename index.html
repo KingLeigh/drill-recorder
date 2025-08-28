@@ -146,6 +146,33 @@
             cursor: not-allowed;
         }
 
+        .refresh-btn {
+            width: 32px;
+            height: 32px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6268;
+            transform: scale(1.1);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .submit-btn {
             width: 100%;
             padding: 15px;
@@ -204,29 +231,7 @@
             border: 1px solid #bee5eb;
         }
 
-        .config-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border: 1px solid #e1e5e9;
-        }
 
-        .config-section h3 {
-            margin-bottom: 15px;
-            color: #495057;
-        }
-
-        .config-section p {
-            margin-bottom: 15px;
-            color: #6c757d;
-            font-size: 0.9em;
-        }
-
-        .url-input {
-            font-family: monospace;
-            font-size: 0.9em;
-        }
 
         @media (max-width: 768px) {
             .container {
@@ -256,36 +261,20 @@
         </div>
 
         <div class="form-container">
-            <!-- Configuration Section -->
-            <div class="config-section">
-                <h3>⚙️ Configuration</h3>
-                <p>Enter your Google Apps Script web app URL below:</p>
-                <input 
-                    type="text" 
-                    id="scriptUrl" 
-                    class="url-input"
-                    placeholder="https://script.google.com/macros/s/AKfycbxldudJV-WBPaoffgRs_bKa1-oyEJY-MugQM_am3ElpHdsZ27VePAvUSJwDUEe30K8D/exec"
-                    value="https://script.google.com/macros/s/AKfycbxldudJV-WBPaoffgRs_bKa1-oyEJY-MugQM_am3ElpHdsZ27VePAvUSJwDUEe30K8D/exec"
-                >
-                <p style="margin-top: 10px; font-size: 0.8em; color: #6c757d;">
-                    <strong>Note:</strong> You need to deploy the Google Apps Script as a web app first. 
-                    See README.md for setup instructions.
-                </p>
-            </div>
+
 
             <!-- Drill Selection and Recording Form -->
             <form id="drillForm">
                 <div class="form-group">
                     <label for="drillSelect">Select Drill *</label>
-                    <select id="drillSelect" name="drillSelect" required>
-                        <option value="">Loading drills...</option>
-                    </select>
-                    <button type="button" id="refreshDrillsBtn" class="refresh-btn" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        🔄 Refresh Drill List
-                    </button>
-                    <p style="margin-top: 8px; font-size: 0.8em; color: #6c757d;">
-                        <strong>Note:</strong> If drills don't load from your sheet, click "Refresh Drill List" or check that your Google Apps Script is properly deployed.
-                    </p>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <select id="drillSelect" name="drillSelect" required style="flex: 1;">
+                            <option value="">Loading drills...</option>
+                        </select>
+                        <button type="button" id="refreshDrillsBtn" class="refresh-btn" title="Refresh Drill List">
+                            🔄
+                        </button>
+                    </div>
                 </div>
 
                 <div class="drill-buttons">
@@ -313,19 +302,13 @@
         const successBtn = document.getElementById('successBtn');
         const failBtn = document.getElementById('failBtn');
         const statusDiv = document.getElementById('status');
-        const scriptUrlInput = document.getElementById('scriptUrl');
         const refreshDrillsBtn = document.getElementById('refreshDrillsBtn');
 
-        // Update script URL when input changes
-        scriptUrlInput.addEventListener('input', function() {
-            scriptUrl = this.value.trim();
-        });
+
 
         // Load drills when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            if (scriptUrl && !scriptUrl.includes('YOUR_SCRIPT_ID')) {
-                loadDrills();
-            }
+            loadDrills();
         });
 
         // Refresh drills button handler
@@ -335,10 +318,6 @@
 
         // Function to load drills from Google Apps Script
         async function loadDrills() {
-            if (!scriptUrl || scriptUrl.includes('YOUR_SCRIPT_ID')) {
-                showStatus('Please configure your Google Apps Script URL first!', 'error');
-                return;
-            }
 
             try {
                 // Show loading state
@@ -461,11 +440,6 @@
 
         // Function to record drill results
         async function recordDrillResult(result) {
-            // Validate script URL
-            if (!scriptUrl || scriptUrl.includes('YOUR_SCRIPT_ID')) {
-                showStatus('Please configure your Google Apps Script URL first!', 'error');
-                return;
-            }
 
             // Validate drill selection
             if (!drillSelect.value) {
@@ -530,50 +504,7 @@
             }
         }
 
-        // Test function to verify the setup
-        function testConnection() {
-            if (!scriptUrl || scriptUrl.includes('YOUR_SCRIPT_ID')) {
-                showStatus('Please configure your Google Apps Script URL first!', 'error');
-                return;
-            }
 
-            const testData = {
-                drill_name: "Test Drill",
-                success: "SUCCESS"
-            };
-
-            const encodedData = encodeURIComponent(JSON.stringify(testData));
-            const testUrl = `${scriptUrl}?data=${encodedData}`;
-            
-            showStatus('Testing connection...', 'loading');
-            
-            fetch(testUrl, { mode: 'no-cors' })
-                .then(() => {
-                    showStatus('✅ Connection test successful!', 'success');
-                })
-                .catch((error) => {
-                    showStatus('❌ Connection test failed. Check your URL.', 'error');
-                });
-        }
-
-        // Add test button to the page
-        const testBtn = document.createElement('button');
-        testBtn.textContent = '🧪 Test Connection';
-        testBtn.style.cssText = `
-            width: 100%;
-            padding: 10px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 10px;
-        `;
-        testBtn.onclick = testConnection;
-        
-        // Insert test button after the form
-        form.appendChild(testBtn);
     </script>
 </body>
 </html>
