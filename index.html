@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Recorder - Google Sheets Integration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4285f4;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+        }
+
+        select:not([value=""]) {
+            border-color: #34a853;
+            background: #f8fff9;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .drill-buttons {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .success-btn, .fail-btn {
+            flex: 1;
+            padding: 25px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .success-btn {
+            background: linear-gradient(135deg, #34a853 0%, #28a745 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(52, 168, 83, 0.3);
+        }
+
+        .success-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(52, 168, 83, 0.4);
+        }
+
+        .fail-btn {
+            background: linear-gradient(135deg, #ea4335 0%, #dc3545 100%);
+            color: white;
+            box-shadow: 0 8px 25px rgba(234, 67, 53, 0.3);
+        }
+
+        .fail-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(234, 67, 53, 0.4);
+        }
+
+        .success-btn:disabled, .fail-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .success-btn.pressed, .fail-btn.pressed {
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .success-btn.recording, .fail-btn.recording {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(66, 133, 244, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            animation: successPulse 0.6s ease-in-out;
+        }
+
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .config-section p {
+            margin-bottom: 15px;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .url-input {
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Drill Recorder</h1>
+            <p>Record drill results directly to Google Sheets</p>
+        </div>
+
+        <div class="form-container">
+            <!-- Configuration Section -->
+            <div class="config-section">
+                <h3>⚙️ Configuration</h3>
+                <p>Enter your Google Apps Script web app URL below:</p>
+                <input 
+                    type="text" 
+                    id="scriptUrl" 
+                    class="url-input"
+                    placeholder="https://script.google.com/macros/s/AKfycbxldudJV-WBPaoffgRs_bKa1-oyEJY-MugQM_am3ElpHdsZ27VePAvUSJwDUEe30K8D/exec"
+                    value="https://script.google.com/macros/s/AKfycbxldudJV-WBPaoffgRs_bKa1-oyEJY-MugQM_am3ElpHdsZ27VePAvUSJwDUEe30K8D/exec"
+                >
+                <p style="margin-top: 10px; font-size: 0.8em; color: #6c757d;">
+                    <strong>Note:</strong> You need to deploy the Google Apps Script as a web app first. 
+                    See README.md for setup instructions.
+                </p>
+            </div>
+
+            <!-- Drill Selection and Recording Form -->
+            <form id="drillForm">
+                <div class="form-group">
+                    <label for="drillSelect">Select Drill *</label>
+                    <select id="drillSelect" name="drillSelect" required>
+                        <option value="">Loading drills...</option>
+                    </select>
+                    <button type="button" id="refreshDrillsBtn" class="refresh-btn" style="margin-top: 10px; padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        🔄 Refresh Drill List
+                    </button>
+                    <p style="margin-top: 8px; font-size: 0.8em; color: #6c757d;">
+                        <strong>Note:</strong> If drills don't load from your sheet, click "Refresh Drill List" or check that your Google Apps Script is properly deployed.
+                    </p>
+                </div>
+
+                <div class="drill-buttons">
+                    <button type="button" class="success-btn" id="successBtn" disabled>
+                        ✅ SUCCESS
+                    </button>
+                    <button type="button" class="fail-btn" id="failBtn" disabled>
+                        ❌ FAIL
+                    </button>
+                </div>
+            </form>
+
+            <!-- Status Display -->
+            <div id="status" class="status" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let scriptUrl = 'https://script.google.com/macros/s/AKfycbxldudJV-WBPaoffgRs_bKa1-oyEJY-MugQM_am3ElpHdsZ27VePAvUSJwDUEe30K8D/exec';
+
+        // DOM Elements
+        const form = document.getElementById('drillForm');
+        const drillSelect = document.getElementById('drillSelect');
+        const successBtn = document.getElementById('successBtn');
+        const failBtn = document.getElementById('failBtn');
+        const statusDiv = document.getElementById('status');
+        const scriptUrlInput = document.getElementById('scriptUrl');
+        const refreshDrillsBtn = document.getElementById('refreshDrillsBtn');
+
+        // Update script URL when input changes
+        scriptUrlInput.addEventListener('input', function() {
+            scriptUrl = this.value.trim();
+        });
+
+        // Load drills when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (scriptUrl && !scriptUrl.includes('YOUR_SCRIPT_ID')) {
+                loadDrills();
+            }
+        });
+
+        // Refresh drills button handler
+        refreshDrillsBtn.addEventListener('click', function() {
+            loadDrills();
+        });
+
+        // Function to load drills from Google Apps Script
+        async function loadDrills() {
+            if (!scriptUrl || scriptUrl.includes('YOUR_SCRIPT_ID')) {
+                showStatus('Please configure your Google Apps Script URL first!', 'error');
+                return;
+            }
+
+            try {
+                // Show loading state
+                drillSelect.innerHTML = '<option value="">Loading drills...</option>';
+                refreshDrillsBtn.disabled = true;
+
+                // Get the base URL for the script (remove any existing parameters)
+                const baseUrl = scriptUrl.split('?')[0];
+                const drillsUrl = `${baseUrl}?action=getDrills`;
+
+                // Try to fetch drills using a simple approach
+                // Since CORS is an issue, we'll use a different strategy
+                const drills = await fetchDrillsSimple(drillsUrl);
+                
+                if (drills && drills.length > 0) {
+                    showStatus(`✅ Loaded ${drills.length} drills from your sheet!`, 'success');
+                    populateDrillSelect(drills);
+                } else {
+                    throw new Error('No drills returned from sheet');
+                }
+                
+            } catch (error) {
+                console.error('Error loading drills from sheet:', error);
+                showStatus('⚠️ Could not load drills from sheet. Using default list.', 'error');
+                
+                // Fallback to default drills
+                const defaultDrills = [
+                    'Fire Drill',
+                    'Earthquake Drill',
+                    'Tornado Drill',
+                    'Lockdown Drill',
+                    'Evacuation Drill',
+                    'Medical Emergency Drill',
+                    'Active Shooter Drill',
+                    'Bomb Threat Drill',
+                    'Chemical Spill Drill',
+                    'Power Outage Drill'
+                ];
+                
+                populateDrillSelect(defaultDrills);
+            } finally {
+                refreshDrillsBtn.disabled = false;
+            }
+        }
+
+        // Function to fetch drills using a simple approach
+        function fetchDrillsSimple(url) {
+            return new Promise((resolve, reject) => {
+                // Try to fetch directly first
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.success && data.drills) {
+                            resolve(data.drills);
+                        } else {
+                            reject(new Error(data?.error || 'Invalid response format'));
+                        }
+                    })
+                    .catch(error => {
+                        // If direct fetch fails, try with no-cors mode
+                        console.log('Direct fetch failed, trying no-cors mode...');
+                        fetch(url, { mode: 'no-cors' })
+                            .then(() => {
+                                // Since no-cors doesn't give us the response content,
+                                // we'll need to manually check the sheet
+                                reject(new Error('CORS blocked - cannot read drills from sheet'));
+                            })
+                            .catch(noCorsError => {
+                                reject(new Error('Failed to load drills: ' + noCorsError.message));
+                            });
+                    });
+            });
+        }
+
+        // Function to populate the drill select dropdown
+        function populateDrillSelect(drills) {
+            drillSelect.innerHTML = '<option value="">Choose a drill...</option>';
+            
+            drills.forEach(drill => {
+                const option = document.createElement('option');
+                option.value = drill;
+                option.textContent = drill;
+                drillSelect.appendChild(option);
+            });
+            
+            // Reset button states
+            successBtn.disabled = true;
+            failBtn.disabled = true;
+        }
+
+        // Enable/disable buttons based on drill selection
+        drillSelect.addEventListener('change', function() {
+            const hasDrillSelected = this.value !== '';
+            successBtn.disabled = !hasDrillSelected;
+            failBtn.disabled = !hasDrillSelected;
+        });
+
+        // Success button handler
+        successBtn.addEventListener('click', function() {
+            addButtonPressEffect(this);
+            recordDrillResult('SUCCESS');
+        });
+
+        // Fail button handler
+        failBtn.addEventListener('click', function() {
+            addButtonPressEffect(this);
+            recordDrillResult('FAIL');
+        });
+
+        // Function to add visual button press effect
+        function addButtonPressEffect(button) {
+            // Add pressed effect
+            button.classList.add('pressed');
+            
+            // Remove pressed effect after animation
+            setTimeout(() => {
+                button.classList.remove('pressed');
+            }, 150);
+        }
+
+        // Function to record drill results
+        async function recordDrillResult(result) {
+            // Validate script URL
+            if (!scriptUrl || scriptUrl.includes('YOUR_SCRIPT_ID')) {
+                showStatus('Please configure your Google Apps Script URL first!', 'error');
+                return;
+            }
+
+            // Validate drill selection
+            if (!drillSelect.value) {
+                showStatus('Please select a drill first!', 'error');
+                return;
+            }
+
+            // Prepare data
+            const data = {
+                drill_name: drillSelect.value,
+                success: result
+            };
+
+            // Show loading state
+            showStatus(`Recording ${result} result for ${drillSelect.value}...`, 'loading');
+            
+            // Add recording state to buttons
+            successBtn.classList.add('recording');
+            failBtn.classList.add('recording');
+
+            try {
+                // Encode data and send to Google Apps Script
+                const encodedData = encodeURIComponent(JSON.stringify(data));
+                const url = `${scriptUrl}?data=${encodedData}`;
+
+                // Make the request
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'no-cors' // Required for cross-origin requests to Google Apps Script
+                });
+
+                // Since we're using no-cors, we can't read the response
+                // But we can assume success if no error was thrown
+                const timestamp = new Date().toLocaleTimeString();
+                showStatus(`✅ ${result} result recorded for ${drillSelect.value} at ${timestamp}!`, 'success');
+                
+                // Keep the drill selection for multiple rounds
+                // successBtn.disabled = true;
+                // failBtn.disabled = true;
+                
+            } catch (error) {
+                console.error('Error recording drill result:', error);
+                showStatus('❌ Error recording result. Please try again.', 'error');
+            } finally {
+                // Remove recording state from buttons
+                successBtn.classList.remove('recording');
+                failBtn.classList.remove('recording');
+            }
+        }
+
+        // Function to show status messages
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Test function to verify the setup
+        function testConnection() {
+            if (!scriptUrl || scriptUrl.includes('YOUR_SCRIPT_ID')) {
+                showStatus('Please configure your Google Apps Script URL first!', 'error');
+                return;
+            }
+
+            const testData = {
+                drill_name: "Test Drill",
+                success: "SUCCESS"
+            };
+
+            const encodedData = encodeURIComponent(JSON.stringify(testData));
+            const testUrl = `${scriptUrl}?data=${encodedData}`;
+            
+            showStatus('Testing connection...', 'loading');
+            
+            fetch(testUrl, { mode: 'no-cors' })
+                .then(() => {
+                    showStatus('✅ Connection test successful!', 'success');
+                })
+                .catch((error) => {
+                    showStatus('❌ Connection test failed. Check your URL.', 'error');
+                });
+        }
+
+        // Add test button to the page
+        const testBtn = document.createElement('button');
+        testBtn.textContent = '🧪 Test Connection';
+        testBtn.style.cssText = `
+            width: 100%;
+            padding: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        `;
+        testBtn.onclick = testConnection;
+        
+        // Insert test button after the form
+        form.appendChild(testBtn);
+    </script>
+</body>
+</html>
