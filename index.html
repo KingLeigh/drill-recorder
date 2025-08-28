@@ -173,6 +173,57 @@
             transform: none;
         }
 
+        .progress-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+        }
+
+        .progress-section h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .progress-table {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .progress-row {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .progress-label {
+            display: block;
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .progress-value {
+            display: block;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #495057;
+        }
+
+        @media (max-width: 768px) {
+            .progress-table {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
         .submit-btn {
             width: 100%;
             padding: 15px;
@@ -277,6 +328,25 @@
                     </div>
                 </div>
 
+                <!-- Progress Table -->
+                <div class="progress-section" id="progressSection" style="display: none;">
+                    <h3>📊 Current Session Progress</h3>
+                    <div class="progress-table">
+                        <div class="progress-row">
+                            <span class="progress-label">Attempts:</span>
+                            <span class="progress-value" id="totalAttempts">0</span>
+                        </div>
+                        <div class="progress-row">
+                            <span class="progress-label">Success Rate:</span>
+                            <span class="progress-value" id="successRate">0%</span>
+                        </div>
+                        <div class="progress-row">
+                            <span class="progress-label">Current Streak:</span>
+                            <span class="progress-value" id="currentStreak">0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="drill-buttons">
                     <button type="button" class="success-btn" id="successBtn" disabled>
                         ✅ SUCCESS
@@ -296,6 +366,14 @@
         // Configuration
         let scriptUrl = 'https://script.google.com/macros/s/AKfycbxldudJV-WBPaoffgRs_bKa1-oyEJY-MugQM_am3ElpHdsZ27VePAvUSJwDUEe30K8D/exec';
 
+        // Progress tracking
+        let currentDrill = '';
+        let sessionStats = {
+            attempts: 0,
+            successes: 0,
+            currentStreak: 0
+        };
+
         // DOM Elements
         const form = document.getElementById('drillForm');
         const drillSelect = document.getElementById('drillSelect');
@@ -309,6 +387,8 @@
         // Load drills when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadDrills();
+            // Initialize progress display
+            showProgress();
         });
 
         // Refresh drills button handler
@@ -408,11 +488,64 @@
             failBtn.disabled = true;
         }
 
+        // Function to reset progress
+        function resetProgress() {
+            sessionStats = {
+                attempts: 0,
+                successes: 0,
+                currentStreak: 0
+            };
+            updateProgressDisplay();
+        }
+
+        // Function to update progress
+        function updateProgress(success) {
+            sessionStats.attempts++;
+            
+            if (success) {
+                sessionStats.successes++;
+                sessionStats.currentStreak++;
+            } else {
+                sessionStats.currentStreak = 0;
+            }
+            
+            updateProgressDisplay();
+        }
+
+        // Function to update progress display
+        function updateProgressDisplay() {
+            document.getElementById('totalAttempts').textContent = sessionStats.attempts;
+            
+            const successRate = sessionStats.attempts > 0 
+                ? Math.round((sessionStats.successes / sessionStats.attempts) * 100)
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            
+            document.getElementById('currentStreak').textContent = sessionStats.currentStreak;
+        }
+
+        // Function to show/hide progress section
+        function showProgress() {
+            const progressSection = document.getElementById('progressSection');
+            if (currentDrill) {
+                progressSection.style.display = 'block';
+            } else {
+                progressSection.style.display = 'none';
+            }
+        }
+
         // Enable/disable buttons based on drill selection
         drillSelect.addEventListener('change', function() {
             const hasDrillSelected = this.value !== '';
             successBtn.disabled = !hasDrillSelected;
             failBtn.disabled = !hasDrillSelected;
+            
+            // Reset progress when drill changes
+            if (this.value !== currentDrill) {
+                resetProgress();
+                currentDrill = this.value;
+                showProgress();
+            }
         });
 
         // Success button handler
@@ -475,6 +608,9 @@
                 // But we can assume success if no error was thrown
                 const timestamp = new Date().toLocaleTimeString();
                 showStatus(`✅ ${result} result recorded for ${drillSelect.value} at ${timestamp}!`, 'success');
+                
+                // Update progress tracking
+                updateProgress(result === 'SUCCESS');
                 
                 // Keep the drill selection for multiple rounds
                 // successBtn.disabled = true;
